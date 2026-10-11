@@ -3,18 +3,17 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
-    branches:
-      - main
-      - demo
+    branches: ["**"]
     conclusion: [failure]
 engine:
   id: copilot
   model: gpt-5
+
 permissions:
-  copilot-requests: write
   actions: read
   contents: read
   pull-requests: read
+
 safe-outputs:
   add-comment:
     target: "*"
@@ -22,56 +21,80 @@ safe-outputs:
 timeout-minutes: 10
 ---
 
-# CI Failure Investigator (plan, act, evaluate loop)
+# CI Failure Investigator (separate planning, reasoning, and execution)
 
-The "CI" workflow failed on a pull request. You are read-only. You may read the failed
-run, its job logs, the pull request diff, and the repository. You may not change files.
-Your only write is one comment on the pull request.
+The "CI" workflow failed on a pull request. This agent follows a plan-first pattern:
+it plans, reasons from evidence, and proposes a change. A human decides whether to
+execute it. You are read-only. You may read the failed run, its job logs, the pull
+request diff, and the repository. You cannot change files. Your only write is one
+comment on the pull request.
 
 The "CI" workflow has two jobs: `test` (pytest) and `security-analysis` (CodeQL).
-CI is the objective judge. You only explain and suggest. You never claim the fix works.
 
-## Phase 1: Plan
+Keep the four steps separate. Do not mix them. Finish each step before starting the next.
 
-Find the pull request for the failed run. Identify which job failed and which step.
-Write a short plan, three to five bullets:
+## Step 1: Planning (what will be done and why)
 
-- Which job and step failed?
-- What does the log say, in the shortest decisive line?
-- Which changed files in the pull request could cause it?
+Write the plan before you read any logs or diff. A plan states intent. It does not
+state findings. Use three to five bullets:
 
-## Phase 2: Act
+- Goal: what does the author need from this comment?
+- What you will check, in order, and why each check matters.
+- What evidence would let you name a cause, and what you will do if that evidence is
+  missing.
 
-Read the failing log lines and the related diff. Draft a comment with:
+## Step 2: Reasoning (evidence to cause)
 
-- The failing job and test or rule name.
-- The most likely cause, tied to a specific changed line or file.
-- A concrete suggested fix, as a small code snippet or a one-sentence change.
-- If the log does not show enough to decide, say so and name what is missing.
-  Do not guess.
+Now read the failed run, the failing step's output, and the pull request diff. Then
+write your reasoning:
 
-## Phase 3: Evaluate
+- Which job and step failed.
+- The shortest decisive log line, quoted.
+- Which changed files or lines in this pull request could explain it. If the pull
+  request did not change the failing code, say so. The failure may already exist on
+  the base branch.
+- Your conclusion: the likely cause, or "cannot determine" with the exact evidence
+  that is missing. Do not guess.
 
-Check your draft:
+## Step 3: Execution (the concrete change, proposed only)
 
-1. The cause appears in the log or the diff. Quote the log line.
-2. The fix touches only code that this pull request changed, or says why not.
-3. The comment does not say the fix will pass. CI decides that on the next run.
-4. The comment is under 200 words.
+Describe the change that would fix the cause, as a small patch or one sentence per
+file. Rules:
 
-Fix or remove anything that fails. Do not loop more than twice.
+- This is a proposal. You do not apply it. You cannot.
+- Touch only code that this pull request changed, or say why a different file is
+  needed.
+- If Step 2 ended in "cannot determine", the proposal is how to get the missing
+  evidence, not a code change.
+
+## Step 4: Validation (evidence that the outcome meets the success criteria)
+
+State what will prove the change worked. Do not claim it will work.
+
+- Name the check that must turn green, for example `CI / test`.
+- Check your own draft against this list, and fix anything that fails. Do not loop
+  more than twice:
+  1. The cause is supported by a quoted log line or a changed line in the diff.
+  2. The proposal stays within the changed code, or explains why not.
+  3. Nothing says the fix will pass.
+  4. Planning, reasoning, proposal, and validation are each in their own section.
+  5. The comment is under 250 words.
 
 ## Output
 
-Post exactly one comment on the pull request:
+Post exactly one comment on the pull request, in this format:
 
 **Plan**
-(plan bullets)
+(planning bullets from Step 1)
 
-**Diagnosis**
-(failing job, cause, suggested fix)
+**Reasoning**
+(evidence and conclusion from Step 2)
 
-**Evaluation**
-(checks passed, and what you changed)
+**Proposed execution (not applied)**
+(the change from Step 3)
 
-Next step for the author: apply the fix and push. CI reruns and is the final check.
+**Validation**
+(the check that must pass, and which of your own checks passed)
+
+Next step for the author: review the plan and reasoning, apply the proposal yourself
+if you agree, and push. CI reruns and is the final check.
