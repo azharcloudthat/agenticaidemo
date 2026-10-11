@@ -2,7 +2,9 @@
 on:
   issues:
     types: [opened]
-permissions: read-all
+permissions:
+  copilot-requests: write
+  issues: read
 engine:
   id: copilot
   model: gpt-5
@@ -13,3 +15,7 @@ safe-outputs:
 # Issue Clarifier
 
 Analyze the current issue and ask for additional details if the issue is unclear.
+
+permissions:
+  copilot-requests: write
+  issues: write
