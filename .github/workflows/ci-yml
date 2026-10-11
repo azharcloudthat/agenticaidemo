@@ -1,15 +1,9 @@
 name: CI
 
-# Turns the success criteria for agent pull requests into enforceable checks:
-# unit tests must pass and CodeQL analysis must complete.
-# Mark both jobs ("test" and "security-analysis") as required status checks
-# in a ruleset or branch protection rule for main.
-
 on:
   pull_request:
     branches: [ main ]
 
-# Least privilege default. Jobs raise it only where needed.
 permissions:
   contents: read
 
@@ -21,7 +15,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"   # matches the runtime in the README deploy steps
+          python-version: "3.12" 
           cache: pip
 
       - name: Install dependencies
