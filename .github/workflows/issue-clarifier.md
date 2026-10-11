@@ -4,7 +4,6 @@ description: |
 on:
   issues:
     types: [opened]
-  reaction: eyes
 permissions:
   copilot-requests: write
   contents: read
